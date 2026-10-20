@@ -307,6 +307,6 @@ Released under the [MIT License](LICENSE). See `LICENSE` for details.
 **Quantum Horizon** · Team ID `VTU-QFF-HC-0012` · Tier `Both`
 · Built with ⚛️ Qiskit for the VTU-QFF Hackathon
 
-[⬆ Back to Top](#Quantum Horizon)
+[⬆ Back to Top](#quantum-horizon)
 
 </div>
