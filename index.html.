@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q-Rescue Intelligence</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#071426;
+  color:#eef6ff;
+}
+header{
+  padding:24px 16px;
+  background:linear-gradient(120deg,#123d5b,#071426);
+  border-bottom:1px solid #29445f;
+}
+header h1{margin:0;font-size:25px}
+header p{color:#a9c1d8;font-size:13px}
+.tag{
+  display:inline-block;
+  padding:5px 9px;
+  background:#173b4d;
+  color:#50e6d0;
+  border-radius:20px;
+  font-size:11px;
+}
+nav{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding:12px;
+  background:#09182a;
+  position:sticky;
+  top:0;
+}
+nav a{
+  text-decoration:none;
+  color:white;
+  background:#17304b;
+  padding:10px;
+  border-radius:8px;
+  font-size:12px;
+  white-space:nowrap;
+}
+main{padding:15px;max-width:1000px;margin:auto}
+section{margin-bottom:22px;scroll-margin-top:70px}
+h2{font-size:19px}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.card{
+  background:#10243b;
+  border:1px solid #29445f;
+  border-radius:13px;
+  padding:14px;
+  margin-bottom:12px;
+}
+.label{font-size:12px;color:#a9c1d8}
+.number{font-size:27px;font-weight:bold;margin-top:5px}
+input,select,textarea,button{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border-radius:8px;
+  border:1px solid #29445f;
+  background:#08192b;
+  color:white;
+  font-size:14px;
+}
+button{
+  background:#173d59;
+  font-weight:bold;
+  cursor:pointer;
+}
+button.primary{
+  background:#42e0cd;
+  color:#05212b;
+  border:0;
+}
+.node{
+  padding:12px;
+  background:#0a1b2d;
+  border-radius:9px;
+  margin:7px 0;
+  border:1px solid #29445f;
+}
+.green{color:#54e6a5}
+.red{color:#ff7180}
+.orange{color:#ffc16d}
+.small{font-size:12px;color:#a9c1d8}
+#messages p,#events p{
+  background:#0a1b2d;
+  padding:10px;
+  border-radius:8px;
+  overflow-wrap:anywhere;
+}
+footer{
+  text-align:center;
+  color:#9eb2ca;
+  font-size:12px;
+  padding:22px;
+}
+@media(min-width:700px){
+  .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .layout{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>⚛ Q-RESCUE INTELLIGENCE</h1>
+  <p>Intelligent Emergency Communication During Natural Disasters</p>
+  <span class="tag">OFFLINE PROTOTYPE</span>
+</header>
+
+<nav>
+  <a href="#dashboard">Dashboard</a>
+  <a href="#network">Network</a>
+  <a href="#disaster">Disaster Simulation</a>
+  <a href="#emergency">Emergency Messages</a>
+  <a href="#optimizer">Route Optimizer</a>
+</nav>
+
+<main>
+
+<section id="dashboard">
+  <h2>Emergency Dashboard</h2>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">Messages Created</div>
+      <div class="number" id="total">0</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Messages Delivered</div>
+      <div class="number green" id="delivered">0</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Active Connections</div>
+      <div class="number" id="active">8</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Network Health</div>
+      <div class="number" id="health">100%</div>
+    </div>
+  </div>
+</section>
+
+<section id="network">
+  <h2>Communication Network</h2>
+
+  <div class="layout">
+    <div class="card">
+      <h3>Network Nodes</h3>
+      <div id="nodes"></div>
+    </div>
+
+    <div class="card">
+      <h3>Connection Status</h3>
+      <div id="connections"></div>
+      <button onclick="breakConnection()">Simulate Connection Failure</button>
+      <button onclick="restoreNetwork()">Restore Network</button>
+    </div>
+  </div>
+</section>
+
+<section id="disaster">
+  <h2>Disaster Simulation</h2>
+
+  <div class="card">
+    <label>Select a disaster</label>
+
+    <select id="disasterType">
+      <option value="Flood">Flood</option>
+      <option value="Earthquake">Earthquake</option>
+      <option value="Landslide">Landslide</option>
+      <option value="Cyclone">Cyclone</option>
+    </select>
+
+    <label>Disaster severity</label>
+
+    <select id="severity">
+      <option value="1">Low</option>
+      <option value="2">Moderate</option>
+      <option value="3">Severe</option>
+    </select>
+
+    <button class="primary" onclick="simulateDisaster()">
+      Run Disaster Simulation
+    </button>
+
+    <p id="disasterResult" class="small">
+      No disaster simulation has been run.
+    </p>
+  </div>
+</section>
+
+<section id="emergency">
+  <h2>Emergency Message Centre</h2>
+
+  <div class="layout">
+    <div class="card">
+      <label>Emergency message</label>
+
+      <textarea id="messageText" rows="3"
+        placeholder="Example: Urgent medical assistance required"></textarea>
+
+      <label>Source</label>
+
+      <select id="source">
+        <option value="Hospital">Hospital</option>
+        <option value="Control Centre">Control Centre</option>
+        <option value="Rescue Team">Rescue Team</option>
+        <option value="Affected Village">Affected Village</option>
+      </select>
+
+      <label>Destination</label>
+
+      <select id="destination">
+        <option value="Rescue Team">Rescue Team</option>
+        <option value="Hospital">Hospital</option>
+        <option value="Relief Shelter">Relief Shelter</option>
+        <option value="Affected Village">Affected Village</option>
+      </select>
+
+      <label>Priority</label>
+
+      <select id="priority">
+        <option value="Critical">Critical</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+
+      <button class="primary" onclick="sendMessage()">
+        Send Test Message
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>Message History</h3>
+      <div id="messages">
+        <p class="small">No messages created yet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="optimizer">
+  <h2>Intelligent Route Optimizer</h2>
+
+  <div class="card">
+    <p class="small">
+      Compare routes using a simple classical shortest-path algorithm.
+      Quantum optimization will be integrated in a later development stage.
+    </p>
+
+    <label>Start location</label>
+
+    <select id="routeStart">
+      <option value="Hospital">Hospital</option>
+      <option value="Control Centre">Control Centre</option>
+      <option value="Rescue Team">Rescue Team</option>
+      <option value="Affected Village">Affected Village</option>
+    </select>
+
+    <label>Destination</label>
+
+    <select id="routeEnd">
+      <option value="Affected Village">Affected Village</option>
+      <option value="Hospital">Hospital</option>
+      <option value="Rescue Team">Rescue Team</option>
+      <option value="Relief Shelter">Relief Shelter</option>
+    </select>
+
+    <button class="primary" onclick="findRoute()">
+      Find Best Route
+    </button>
+
+    <div id="routeResult"></div>
+  </div>
+</section>
+
+<section>
+  <h2>System Activity</h2>
+  <div class="card" id="events">
+    <p>Q-Rescue system initialized.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Q-Rescue Intelligence | Hackathon Software Prototype<br>
+  Simulated results only — not for real emergency dispatch.
+</footer>
+
+<script>
+const names=[
+  "Hospital",
+  "Control Centre",
+  "Rescue Team",
+  "Affected Village",
+  "Relief Shelter"
+];
+
+const originalLinks=[
+  ["Hospital","Control Centre",2],
+  ["Control Centre","Rescue Team",2],
+  ["Rescue Team","Affected Village",3],
+  ["Affected Village","Relief Shelter",2],
+  ["Hospital","Rescue Team",5],
+  ["Control Centre","Affected Village",4],
+  ["Rescue Team","Relief Shelter",4],
+  ["Hospital","Relief Shelter",8]
+];
+
+let links=[];
+let total=0;
+let delivered=0;
+let messages=[];
+
+function resetLinks(){
+  links=originalLinks.map((l,i)=>({
+    id:i,a:l[0],b:l[1],cost:l[2],failed:false
+  }));
+}
+
+function addEvent(text){
+  const el=document.getElementById("events");
+  const p=document.createElement("p");
+  p.textContent=new Date().toLocaleTimeString()+" — "+text;
+  el.prepend(p);
+}
+
+function renderNodes(){
+  document.getElementById("nodes").innerHTML=names.map(name=>{
+    const count=links.filter(l=>
+      (l.a===name||l.b===name)&&!l.failed
+    ).length;
+
+    return `<div class="node">
+      <strong>${name}</strong>
+      <div class="small">${count} active connections</div>
+    </div>`;
+  }).join("");
+}
+
+function renderConnections(){
+  document.getElementById("connections").innerHTML=links.map(l=>{
+    const status=l.failed
+      ?'<span class="red">FAILED</span>'
+      :'<span class="green">ONLINE</span>';
+
+    return `<div class="node">
+      ${l.a} ↔ ${l.b}<br>${status}
+    </div>`;
+  }).join("");
+}
+
+function updateDashboard(){
+  document.getElementById("total").textContent=total;
+  document.getElementById("delivered").textContent=delivered;
+
+  const active=links.filter(l=>!l.failed).length;
+  document.getElementById("active").textContent=active;
+  document.getElementById("health").textContent=
+    Math.round(active/links.length*100)+"%";
+
+  renderNodes();
+  renderConnections();
+}
+
+function breakConnection(){
+  const available=links.filter(l=>!l.failed);
+
+  if(!available.length){
+    addEvent("No active connections remain.");
+    return;
+  }
+
+  const link=available[Math.floor(Math.random()*available.length)];
+  link.failed=true;
+
+  addEvent("Connection failure: "+link.a+" to "+link.b);
+  updateDashboard();
+}
+
+function restoreNetwork(){
+  resetLinks();
+  addEvent("Network restored.");
+  updateDashboard();
+}
+
+function simulateDisaster(){
+  const type=document.getElementById("disasterType").value;
+  const severity=Number(document.getElementById("severity").value);
+
+  const available=links.filter(l=>!l.failed);
+  const count=Math.min(available.length,severity*2);
+
+  available.sort(()=>Math.random()-.5)
+    .slice(0,count)
+    .forEach(l=>l.failed=true);
+
+  document.getElementById("disasterResult").textContent=
+    type+" simulation complete. "+count+
+    " connections have been marked as failed.";
+
+  addEvent(type+" simulated at severity "+severity+".");
+  updateDashboard();
+}
+
+function findPath(start,end){
+  const dist={};
+  const previous={};
+  const visited=new Set();
+
+  names.forEach(n=>dist[n]=Infinity);
+  dist[start]=0;
+
+  while(visited.size<names.length){
+    let current=null;
+    let best=Infinity;
+
+    names.forEach(n=>{
+      if(!visited.has(n)&&dist[n]<best){
+        current=n;
+        best=dist[n];
+      }
+    });
+
+    if(current===null)break;
+    if(current===end)break;
+
+    visited.add(current);
+
+    links.filter(l=>
+      !l.failed&&(l.a===current||l.b===current)
+    ).forEach(l=>{
+      const next=l.a===current?l.b:l.a;
+      const alt=dist[current]+l.cost;
+
+      if(alt<dist[next]){
+        dist[next]=alt;
+        previous[next]=current;
+      }
+    });
+  }
+
+  if(!Number.isFinite(dist[end]))return null;
+
+  const path=[];
+  let current=end;
+
+  while(current){
+    path.unshift(current);
+    if(current===start)break;
+    current=previous[current];
+  }
+
+  return path[0]===start?{path,cost:dist[end]}:null;
+}
+
+function findRoute(){
+  const start=document.getElementById("routeStart").value;
+  const end=document.getElementById("routeEnd").value;
+
+  const result=findPath(start,end);
+  const el=document.getElementById("routeResult");
+
+  if(!result){
+    el.innerHTML='<p class="red">No available route. Try restoring the network.</p>';
+  }else{
+    el.innerHTML=`<div class="node">
+      <strong>Best available classical route</strong>
+      <p>${result.path.join(" → ")}</p>
+      <p>Route cost: ${result.cost}</p>
+    </div>`;
+  }
+
+  addEvent("Route search: "+start+" to "+end+".");
+}
+
+function sendMessage(){
+  const text=document.getElementById("messageText").value.trim();
+  const source=document.getElementById("source").value;
+  const destination=document.getElementById("destination").value;
+  const priority=document.getElementById("priority").value;
+
+  if(!text){
+    alert("Please enter an emergency message.");
+    return;
+  }
+
+  if(source===destination){
+    alert("Please select a different destination.");
+    return;
+  }
+
+  total++;
+
+  const result=findPath(source,destination);
+
+  let status;
+  if(result){
+    delivered++;
+    status="Delivered in simulation";
+  }else{
+    status="Failed: no available route";
+  }
+
+  const item={
+    text,source,destination,priority,status,
+    route:result?result.path.join(" → "):"Unavailable"
+  };
+
+  messages.unshift(item);
+
+  const el=document.getElementById("messages");
+  el.innerHTML="";
+
+  messages.forEach(m=>{
+    const p=document.createElement("p");
+    p.textContent=
+      "["+m.priority+"] "+m.source+" → "+m.destination+
+      "\n"+m.text+"\n"+m.status+
+      "\nRoute: "+m.route;
+    el.appendChild(p);
+  });
+
+  document.getElementById("messageText").value="";
+  addEvent(priority+" priority message processed in simulation.");
+  updateDashboard();
+}
+
+resetLinks();
+updateDashboard();
+</script>
+
+</body>
+</html>
