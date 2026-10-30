@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q-Rescue Intelligence | India Emergency Routing</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#08111f;--panel:#111e30;--panel2:#17263b;--line:#263951;--text:#edf4ff;--muted:#9fb0c6;--blue:#48a6ff;--cyan:#45d6d0;--red:#ff646e;--amber:#ffc15c;--green:#54d69a}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#07101d,#0c1a2b 55%,#101b2d);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+header{padding:22px clamp(16px,4vw,44px);border-bottom:1px solid var(--line);background:#091525}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#1677d2,#37c7c0);display:grid;place-items:center;font-size:24px}
+h1{font-size:clamp(22px,3vw,30px);margin:0}.subtitle{color:var(--muted);margin:5px 0 0;font-size:14px}
+nav{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+nav a{color:#dceaff;text-decoration:none;background:#14243a;border:1px solid var(--line);padding:9px 13px;border-radius:9px;font-size:13px}
+main{max-width:1400px;margin:auto;padding:22px clamp(12px,3vw,32px) 40px}
+.notice{padding:12px 14px;border:1px solid #6e5428;background:#2b2418;color:#ffe0a4;border-radius:10px;font-size:13px;line-height:1.5;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(290px,.85fr);gap:18px}
+.card{background:linear-gradient(180deg,var(--panel),#0e1a2a);border:1px solid var(--line);border-radius:15px;padding:17px;box-shadow:0 12px 30px #0002;margin-bottom:18px}
+.card h2{font-size:18px;margin:0 0 12px}.muted{color:var(--muted);font-size:13px;line-height:1.5}
+#map{display:block;position:relative;height:570px;min-height:380px;width:100%;border-radius:12px;overflow:hidden;background:#dbeafe;z-index:0}
+label{display:block;color:#c5d4e8;font-size:13px;font-weight:700;margin:12px 0 6px}
+input,select,textarea{width:100%;padding:11px 12px;border-radius:9px;border:1px solid #344b67;background:#0a1728;color:var(--text);font-size:14px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #48a6ff22}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{border:0;border-radius:9px;padding:11px 14px;background:var(--blue);color:#061321;font-weight:700;cursor:pointer;margin-top:12px}
+button:hover{filter:brightness(1.08)}button:disabled{opacity:.55;cursor:wait}
+.secondary{background:#243a55;color:var(--text);border:1px solid #3a526e}.danger{background:#9f303d;color:white}.success{background:#17694d;color:white}
+.full{width:100%}
+.result{white-space:pre-line;margin-top:12px;padding:12px;border:1px solid var(--line);background:#0a1728;border-radius:9px;color:#dbeafe;font-size:13px;line-height:1.55;min-height:44px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px}
+.stat{background:#102138;border:1px solid var(--line);padding:12px;border-radius:11px}.stat strong{display:block;font-size:20px;color:#fff}.stat span{font-size:11px;color:var(--muted)}
+.pill{display:inline-block;padding:4px 8px;border-radius:99px;font-size:11px;background:#183d37;color:#8ff0c2}
+.node-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.node{padding:10px;border:1px solid var(--line);border-radius:9px;background:#0c1a2c;font-size:13px}
+.node small{display:block;color:var(--muted);margin-top:4px}
+.message{padding:10px;border:1px solid var(--line);border-radius:9px;margin-top:8px;background:#0c1a2c;font-size:13px;white-space:pre-line}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:10px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+footer{text-align:center;color:var(--muted);padding:22px;border-top:1px solid var(--line);font-size:12px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}#map{height:430px;min-height:380px}}
+@media(max-width:520px){.row{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}#map{height:380px;min-height:380px}.card{padding:13px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo">🛟</div><div><h1>Q-Rescue Intelligence</h1><p class="subtitle">India-wide emergency communication & road-route demonstration</p></div></div>
+  <nav><a href="#mapSection">India Map</a><a href="#optimizer">Route Optimizer</a><a href="#network">Network Simulation</a><a href="#messages">Emergency Messages</a></nav>
+</header>
+<main>
+  <div class="notice"><strong>Prototype notice:</strong> This is a demonstration, not an operational emergency-dispatch system. Map data, geocoding and routing depend on public OpenStreetMap-based services and internet access. Always verify routes and local conditions before acting.</div>
+  <div class="stats">
+    <div class="stat"><strong id="networkStatus">Online demo</strong><span>Network model</span></div>
+    <div class="stat"><strong id="messageCount">0</strong><span>Messages in this session</span></div>
+    <div class="stat"><strong id="routeStatus">Not calculated</strong><span>Road route status</span></div>
+  </div>
+
+  <section id="mapSection" class="card">
+    <h2>🇮🇳 Interactive India Map</h2>
+    <p class="muted">Pan and zoom across India. Search any Indian city, town, address or landmark in the route planner below.</p>
+    <div id="map" aria-label="Interactive map of India"></div>
+    <div id="mapLoadStatus" class="result" style="margin-top:10px">Loading interactive map… If this message remains, check your internet connection or open the page in Chrome.</div>
+    <div class="legend">
+      <span><i class="dot" style="background:#2563eb"></i>Main road route</span>
+      <span><i class="dot" style="background:#f04452"></i>Demo hazard marker</span>
+      <span><i class="dot" style="background:#14a875"></i>Start / destination</span>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div>
+      <section id="optimizer" class="card">
+        <h2>🧭 India-wide Road Route Optimizer</h2>
+        <p class="muted">Enter two places in India. The app searches their map coordinates and requests a driving route.</p>
+        <label for="routeStart">Starting location</label>
+        <input id="routeStart" list="indiaSuggestions" placeholder="Example: Belagavi, Karnataka" autocomplete="off">
+        <label for="routeEnd">Destination</label>
+        <input id="routeEnd" list="indiaSuggestions" placeholder="Example: Bengaluru, Karnataka" autocomplete="off">
+        <datalist id="indiaSuggestions">
+          <option value="Belagavi, Karnataka"><option value="Bengaluru, Karnataka"><option value="Mumbai, Maharashtra">
+          <option value="Pune, Maharashtra"><option value="Delhi"><option value="Chennai, Tamil Nadu">
+          <option value="Hyderabad, Telangana"><option value="Kolkata, West Bengal"><option value="Mysuru, Karnataka">
+          <option value="Mangaluru, Karnataka"><option value="Hubballi, Karnataka"><option value="Guwahati, Assam">
+          <option value="Jaipur, Rajasthan"><option value="Bhopal, Madhya Pradesh"><option value="Kochi, Kerala">
+        </datalist>
+        <div class="row">
+          <button id="findRouteBtn" class="full" type="button">Find Best Route</button>
+          <button id="clearRouteBtn" class="secondary full" type="button">Clear Route</button>
+        </div>
+        <div id="routeResult" class="result" role="status" aria-live="polite">Enter a start and destination, then tap Find Best Route.</div>
+        <p class="muted">The route is a road route from the public OSRM demo service. “Best” means the route returned by that service, not a guarantee of safest or disaster-cleared roads.</p>
+      </section>
+
+
+      <section id="nearbyEmergency" class="card">
+        <h2>🏥 Nearby Emergency Places Finder</h2>
+        <p class="muted">Search for a real hospital, town, landmark or address in India. Then discover mapped emergency facilities nearby.</p>
+        <label for="facilityOrigin">Search starting place</label>
+        <input id="facilityOrigin" placeholder="Example: KLE Hospital, Belagavi">
+        <label for="facilityType">Find nearby</label>
+        <select id="facilityType">
+          <option value="shelter">Relief shelters / mapped shelters</option>
+          <option value="hospital">Hospitals and clinics</option>
+          <option value="fire">Fire stations</option>
+          <option value="police">Police stations</option>
+          <option value="all">All emergency-related places</option>
+        </select>
+        <label for="facilityRadius">Search radius</label>
+        <select id="facilityRadius">
+          <option value="3000">3 km</option>
+          <option value="5000" selected>5 km</option>
+          <option value="10000">10 km</option>
+          <option value="20000">20 km</option>
+        </select>
+        <button id="findNearbyBtn" class="full" type="button">Find Nearby Places</button>
+        <div id="nearbyStatus" class="result">Enter a starting place to discover nearby facilities.</div>
+        <div id="nearbyResults"></div>
+      </section>
+
+      <section id="network" class="card">
+        <h2>📡 Network Failure Simulation</h2>
+        <p class="muted">This is a local demonstration of network-link status. It does not control real telecom infrastructure or change the road route.</p>
+        <div class="node-list" id="networkNodes"></div>
+        <div class="row">
+          <button id="failNetworkBtn" class="danger full" type="button">Simulate Link Failure</button>
+          <button id="restoreNetworkBtn" class="success full" type="button">Restore Network</button>
+        </div>
+        <div id="networkResult" class="result">All simulated communication links are active.</div>
+      </section>
+    </div>
+
+    <div>
+      <section class="card">
+        <h2>🚨 Disaster Demonstration</h2>
+        <p class="muted">Add clearly labelled sample hazard markers to the map. These are not live disaster reports.</p>
+        <label for="hazardType">Demonstration event</label>
+        <select id="hazardType">
+          <option value="Flood">Flood</option><option value="Cyclone">Cyclone</option>
+          <option value="Landslide">Landslide</option><option value="Earthquake">Earthquake</option>
+        </select>
+        <label for="hazardPlace">Location in India</label>
+        <input id="hazardPlace" placeholder="Example: Assam">
+        <button id="addHazardBtn" class="full" type="button">Add Demo Hazard to Map</button>
+        <button id="clearHazardsBtn" class="secondary full" type="button">Clear Demo Hazards</button>
+        <div id="hazardResult" class="result">No demonstration hazards added.</div>
+      </section>
+
+      <section id="messages" class="card">
+        <h2>📨 Emergency Message Priority Demo</h2>
+        <p class="muted">Messages are stored only in this browser session and sorted by priority.</p>
+        <label for="messageSource">From</label>
+        <select id="messageSource"><option>Hospital</option><option>Rescue Team</option><option>Control Centre</option><option>Citizen</option></select>
+        <label for="messageDestination">To</label>
+        <select id="messageDestination"><option>Control Centre</option><option>Hospital</option><option>Rescue Team</option><option>Relief Shelter</option></select>
+        <label for="messagePriority">Priority</label>
+        <select id="messagePriority"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+        <label for="messageText">Message</label>
+        <textarea id="messageText" rows="3" placeholder="Example: Urgent medical supplies required at the relief shelter."></textarea>
+        <button id="sendMessageBtn" class="full" type="button">Process Emergency Message</button>
+        <div id="messageList"></div>
+      </section>
+
+      <section class="card">
+        <h2>⚛ Classical vs Quantum-Inspired Routing Experiment</h2>
+        <p class="muted">Run both methods on the same sample emergency network. The quantum-inspired search below is a classical browser demonstration of the QAOA objective idea—not a real quantum processor or a validated QAOA run.</p>
+        <label for="experimentUrgency">Emergency priority</label>
+        <select id="experimentUrgency"><option value="1">Critical — hospital / rescue</option><option value="2">High — affected village</option><option value="3">Normal — supplies</option></select>
+        <button id="compareBtn" class="full secondary" type="button">Run Both Routing Experiments</button>
+        <div id="quantumResult" class="result">Tap Run Both Routing Experiments to compare route cost on the same sample network.</div>
+      </section>
+    </div>
+  </div>
+</main>
+<footer>Q-Rescue Intelligence · Student prototype · Verify all information independently · Not for real emergency dispatch</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+"use strict";
+
+// ---------- MAP ----------
+const mapStatus = document.getElementById("mapLoadStatus");
+if (typeof L === "undefined") {
+  mapStatus.textContent = "Map library did not load. Please open this file in Chrome with internet access. If it still fails, the network may be blocking the map library CDN.";
+  throw new Error("Leaflet library failed to load");
+}
+const mapElement = document.getElementById("map");
+const indiaMap = L.map(mapElement, { zoomControl: true }).setView([22.8, 79.0], 5);
+mapStatus.textContent = "Map library loaded. Loading map tiles…";
+let tileLoadedOnce = false;
+let usingFallbackTiles = false;
+let activeTileLayer = null;
+function addTileSource(url, attribution, isFallback) {
+  if (activeTileLayer) indiaMap.removeLayer(activeTileLayer);
+  activeTileLayer = L.tileLayer(url, { maxZoom: 19, attribution, crossOrigin: true });
+  activeTileLayer.on("tileload", () => {
+    tileLoadedOnce = true;
+    mapStatus.textContent = isFallback ? "Map loaded using backup map tiles." : "Map loaded. Search for a place or zoom into India.";
+  });
+  activeTileLayer.on("tileerror", () => {
+    if (!tileLoadedOnce && !usingFallbackTiles) {
+      usingFallbackTiles = true;
+      mapStatus.textContent = "Primary map tiles are unavailable. Trying backup map tiles…";
+      addTileSource("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", '&copy; OpenStreetMap contributors &copy; CARTO', true);
+    } else if (!tileLoadedOnce) {
+      mapStatus.textContent = "Map tiles are blocked or unavailable on this connection. Try Chrome with internet access; the map library loaded but map images did not.";
+    }
+  });
+  activeTileLayer.addTo(indiaMap);
+}
+addTileSource("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', false);
+// Mobile browsers sometimes calculate the map size before the page finishes laying out.
+requestAnimationFrame(() => indiaMap.invalidateSize(true));
+window.addEventListener("load", () => setTimeout(() => indiaMap.invalidateSize(true), 250));
+window.addEventListener("resize", () => indiaMap.invalidateSize(true));
+setTimeout(() => {
+  indiaMap.invalidateSize(true);
+  if (!tileLoadedOnce) mapStatus.textContent = usingFallbackTiles ? "Waiting for backup map tiles. If the map stays blank, this network may block map tile servers." : "Map area is ready; waiting for map tiles. If it stays blank, backup tiles will be tried automatically.";
+}, 3000);
+
+let routeLayer = null;
+let hazardLayer = L.layerGroup().addTo(indiaMap);
+let endpointLayer = L.layerGroup().addTo(indiaMap);
+
+const demoCityMarkers = [
+  ["Belagavi, Karnataka",15.8497,74.4977],["Mumbai, Maharashtra",19.0760,72.8777],
+  ["Chennai, Tamil Nadu",13.0827,80.2707],["Kolkata, West Bengal",22.5726,88.3639],
+  ["Delhi",28.6139,77.2090],["Guwahati, Assam",26.1445,91.7362],
+  ["Bengaluru, Karnataka",12.9716,77.5946],["Hyderabad, Telangana",17.3850,78.4867]
+];
+demoCityMarkers.forEach(([name,lat,lon]) => L.circleMarker([lat,lon],{
+  radius:4,color:"#fff",weight:1,fillColor:"#2563eb",fillOpacity:.85
+}).addTo(indiaMap).bindPopup("<b>"+name+"</b><br>City reference marker"));
+
+// ---------- INDIA PLACE SEARCH + ROAD ROUTING ----------
+async function geocodeIndia(place) {
+  // Try Nominatim first, then Photon. Some mobile browsers/networks or public
+  // geocoding instances return empty results even when the place exists.
+  let nominatimError = null;
+  try {
+    const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=3&countrycodes=in&q=" + encodeURIComponent(place);
+    const response = await fetch(url, {headers: {"Accept":"application/json"}});
+    if (!response.ok) throw new Error("Nominatim HTTP " + response.status);
+    const results = await response.json();
+    if (results.length) {
+      const r = results[0];
+      return {lat:Number(r.lat), lon:Number(r.lon), display:r.display_name || place};
+    }
+  } catch (err) { nominatimError = err; }
+
+  try {
+    const photonUrl = "https://photon.komoot.io/api/?limit=8&lang=en&q=" + encodeURIComponent(place + ", India");
+    const response = await fetch(photonUrl, {headers: {"Accept":"application/json"}});
+    if (!response.ok) throw new Error("Alternative place search HTTP " + response.status);
+    const data = await response.json();
+    const features = (data.features || []).filter(f => {
+      const country = String(f.properties?.country || "").toLowerCase();
+      return country === "india" || country === "in";
+    });
+    if (features.length) {
+      const f = features[0];
+      return {lat:Number(f.geometry.coordinates[1]), lon:Number(f.geometry.coordinates[0]), display:[f.properties.name, f.properties.city, f.properties.state, f.properties.country].filter(Boolean).join(", ")};
+    }
+    // Photon may omit the country field for some Indian localities. Accept a
+    // result only when the user's query explicitly includes India.
+    if (/\bindia\b/i.test(place) && data.features?.length) {
+      const f = data.features[0];
+      return {lat:Number(f.geometry.coordinates[1]), lon:Number(f.geometry.coordinates[0]), display:f.properties.name || place};
+    }
+  } catch (err) {
+    throw new Error("Both place-search services failed. Check your connection and try again. Details: " + (err.message || err));
+  }
+  if (nominatimError) throw new Error("Place search services could not locate this place. Try a nearby town or add 'Karnataka, India'.");
+  throw new Error('Could not find "' + place + '" in India using either place-search service. Try a nearby town or add the state name.');
+}
+
+async function findLocalRoute() {
+  const startText = document.getElementById("routeStart").value.trim();
+  const endText = document.getElementById("routeEnd").value.trim();
+  const resultBox = document.getElementById("routeResult");
+  const button = document.getElementById("findRouteBtn");
+  if (!startText || !endText) { resultBox.textContent = "Please enter both a starting location and a destination."; return; }
+  if (startText.toLowerCase() === endText.toLowerCase()) { resultBox.textContent = "Please enter two different locations."; return; }
+
+  button.disabled = true;
+  button.textContent = "Finding route...";
+  resultBox.textContent = "Step 1 of 3: Searching for the starting location...";
+  document.getElementById("routeStatus").textContent = "Searching";
+  try {
+    const start = await geocodeIndia(startText);
+    resultBox.textContent = "Step 2 of 3: Searching for the destination...";
+    // Nominatim's public service asks clients to avoid sending rapid repeated requests.
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    const end = await geocodeIndia(endText);
+    resultBox.textContent = "Step 3 of 3: Calculating the road route...";
+    const routeUrl = "https://router.project-osrm.org/route/v1/driving/" +
+      start.lon + "," + start.lat + ";" + end.lon + "," + end.lat +
+      "?overview=full&geometries=geojson&alternatives=true&steps=false";
+    const routeResponse = await fetch(routeUrl);
+    if (!routeResponse.ok) throw new Error("Road routing service returned HTTP " + routeResponse.status + ".");
+    const routeData = await routeResponse.json();
+    if (routeData.code !== "Ok" || !routeData.routes || !routeData.routes.length) {
+      throw new Error("No driving route was returned for these locations.");
+    }
+
+    if (routeLayer) indiaMap.removeLayer(routeLayer);
+    routeLayer = L.layerGroup().addTo(indiaMap);
+    endpointLayer.clearLayers();
+
+    routeData.routes.slice(1).forEach(route => {
+      L.geoJSON(route.geometry,{style:{color:"#64748b",weight:5,opacity:.75,dashArray:"8 8"}}).addTo(routeLayer);
+    });
+    const mainLine = L.geoJSON(routeData.routes[0].geometry,{
+      style:{color:"#1269e8",weight:6,opacity:.95}
+    }).addTo(routeLayer);
+
+    L.marker([start.lat,start.lon]).bindPopup("<b>START</b><br>"+escapeHtml(start.display)).addTo(endpointLayer);
+    L.marker([end.lat,end.lon]).bindPopup("<b>DESTINATION</b><br>"+escapeHtml(end.display)).addTo(endpointLayer);
+
+    indiaMap.fitBounds(mainLine.getBounds(),{padding:[35,35],maxZoom:13});
+    const km = (routeData.routes[0].distance/1000).toFixed(1);
+    const mins = Math.round(routeData.routes[0].duration/60);
+    const hours = Math.floor(mins/60), rem = mins%60;
+    resultBox.textContent = "ROUTE FOUND\nStart: "+start.display+"\nDestination: "+end.display+
+      "\nRoad distance: "+km+" km\nEstimated driving time: "+(hours ? hours+" hr " : "")+rem+" min"+
+      "\nAlternative routes returned: "+(routeData.routes.length-1)+
+      "\nBlue = main route; dashed grey = alternatives.";
+    document.getElementById("routeStatus").textContent = "Route found";
+  } catch (error) {
+    resultBox.textContent = "ROUTE NOT FOUND\n" + error.message +
+      "\n\nCheck your internet connection. Public map services may be busy; wait and try again.";
+    document.getElementById("routeStatus").textContent = "Unavailable";
+    console.error("Q-Rescue route error:",error);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Find Best Route";
+  }
+}
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+document.getElementById("findRouteBtn").addEventListener("click",findLocalRoute);
+document.getElementById("clearRouteBtn").addEventListener("click",() => {
+  if(routeLayer){indiaMap.removeLayer(routeLayer);routeLayer=null;}
+  endpointLayer.clearLayers();
+  document.getElementById("routeResult").textContent = "Route cleared. Enter two places to calculate another route.";
+  document.getElementById("routeStatus").textContent = "Not calculated";
+});
+
+
+// ---------- NEARBY EMERGENCY PLACE FINDER (OPENSTREETMAP OVERPASS) ----------
+let nearbyPlaceLayer = L.layerGroup().addTo(indiaMap);
+let nearbyOrigin = null;
+let nearbyPlaces = [];
+
+function overpassQuery(lat, lon, radius, type) {
+  let selectors = [];
+  if (type === "shelter") {
+    selectors = [
+      'node(around:'+radius+','+lat+','+lon+')[amenity=shelter];',
+      'way(around:'+radius+','+lat+','+lon+')[amenity=shelter];',
+      'relation(around:'+radius+','+lat+','+lon+')[amenity=shelter];',
+      'node(around:'+radius+','+lat+','+lon+')[social_facility=shelter];',
+      'way(around:'+radius+','+lat+','+lon+')[social_facility=shelter];',
+      'node(around:'+radius+','+lat+','+lon+')[emergency=assembly_point];',
+      'way(around:'+radius+','+lat+','+lon+')[emergency=assembly_point];'
+    ];
+  } else if (type === "hospital") {
+    selectors = [
+      'node(around:'+radius+','+lat+','+lon+')[amenity=hospital];',
+      'way(around:'+radius+','+lat+','+lon+')[amenity=hospital];',
+      'relation(around:'+radius+','+lat+','+lon+')[amenity=hospital];',
+      'node(around:'+radius+','+lat+','+lon+')[healthcare=hospital];',
+      'node(around:'+radius+','+lat+','+lon+')[amenity=clinic];',
+      'way(around:'+radius+','+lat+','+lon+')[amenity=clinic];'
+    ];
+  } else if (type === "fire") {
+    selectors = [
+      'node(around:'+radius+','+lat+','+lon+')[amenity=fire_station];',
+      'way(around:'+radius+','+lat+','+lon+')[amenity=fire_station];',
+      'relation(around:'+radius+','+lat+','+lon+')[amenity=fire_station];'
+    ];
+  } else if (type === "police") {
+    selectors = [
+      'node(around:'+radius+','+lat+','+lon+')[amenity=police];',
+      'way(around:'+radius+','+lat+','+lon+')[amenity=police];',
+      'relation(around:'+radius+','+lat+','+lon+')[amenity=police];'
+    ];
+  } else {
+    selectors = [
+      'node(around:'+radius+','+lat+','+lon+')[amenity~"^(hospital|clinic|fire_station|police|shelter)$"];',
+      'way(around:'+radius+','+lat+','+lon+')[amenity~"^(hospital|clinic|fire_station|police|shelter)$"];',
+      'relation(around:'+radius+','+lat+','+lon+')[amenity~"^(hospital|clinic|fire_station|police|shelter)$"];',
+      'node(around:'+radius+','+lat+','+lon+')[emergency~"^(assembly_point|fire_service|ambulance_station)$"];',
+      'way(around:'+radius+','+lat+','+lon+')[emergency~"^(assembly_point|fire_service|ambulance_station)$"];'
+    ];
+  }
+  return '[out:json][timeout:25];(' + selectors.join('') + ');out center tags;';
+}
+
+function classifyFacility(tags) {
+  if (tags.amenity === "hospital" || tags.healthcare === "hospital" || tags.amenity === "clinic") return "Hospital / clinic";
+  if (tags.amenity === "fire_station" || tags.emergency === "fire_service") return "Fire station";
+  if (tags.amenity === "police") return "Police station";
+  if (tags.amenity === "shelter" || tags.social_facility === "shelter" || tags.emergency === "assembly_point") return "Shelter / assembly point";
+  if (tags.emergency === "ambulance_station") return "Ambulance station";
+  return "Emergency-related place";
+}
+
+async function findNearbyEmergencyPlaces() {
+  const placeText = document.getElementById("facilityOrigin").value.trim();
+  const type = document.getElementById("facilityType").value;
+  const radius = Number(document.getElementById("facilityRadius").value);
+  const status = document.getElementById("nearbyStatus");
+  const resultsBox = document.getElementById("nearbyResults");
+  const button = document.getElementById("findNearbyBtn");
+
+  if (!placeText) {
+    status.textContent = "Enter a starting place, such as KLE Hospital, Belagavi.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Searching...";
+  resultsBox.innerHTML = "";
+  status.textContent = "Finding the place on the India map...";
+  try {
+    nearbyOrigin = await geocodeIndia(placeText);
+    status.textContent = "Searching OpenStreetMap for nearby mapped facilities...";
+    const query = overpassQuery(nearbyOrigin.lat, nearbyOrigin.lon, radius, type);
+    const endpoints = [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter"
+    ];
+    let payload = null;
+    let lastError = null;
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
+          body: "data=" + encodeURIComponent(query)
+        });
+        if (!response.ok) throw new Error("Map places service returned HTTP " + response.status);
+        payload = await response.json();
+        break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    if (!payload) throw lastError || new Error("Nearby places service is unavailable.");
+
+    nearbyPlaces = (payload.elements || []).map(el => {
+      const lat = el.lat ?? el.center?.lat;
+      const lon = el.lon ?? el.center?.lon;
+      if (lat == null || lon == null) return null;
+      const tags = el.tags || {};
+      return {
+        id: String(el.type) + "-" + String(el.id),
+        name: tags.name || tags.amenity || tags.emergency || "Unnamed mapped facility",
+        kind: classifyFacility(tags),
+        lat: Number(lat),
+        lon: Number(lon),
+        tags
+      };
+    }).filter(Boolean);
+
+    // Remove duplicate facilities by approximate coordinates.
+    const seen = new Set();
+    nearbyPlaces = nearbyPlaces.filter(place => {
+      const key = place.lat.toFixed(4) + "," + place.lon.toFixed(4);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    nearbyPlaceLayer.clearLayers();
+    endpointLayer.clearLayers();
+    if (routeLayer) { indiaMap.removeLayer(routeLayer); routeLayer = null; }
+
+    L.marker([nearbyOrigin.lat, nearbyOrigin.lon])
+      .bindPopup("<b>Search starting place</b><br>" + escapeHtml(nearbyOrigin.display))
+      .addTo(nearbyPlaceLayer);
+
+    nearbyPlaces.forEach((place, index) => {
+      const marker = L.circleMarker([place.lat, place.lon], {
+        radius: 8, color: "#fff", weight: 2,
+        fillColor: "#0f9d75", fillOpacity: .95
+      }).addTo(nearbyPlaceLayer);
+      marker.bindPopup("<b>" + escapeHtml(place.name) + "</b><br>" +
+        escapeHtml(place.kind) + "<br>Mapped OpenStreetMap place");
+    });
+
+    const bounds = L.latLngBounds([[nearbyOrigin.lat, nearbyOrigin.lon]]);
+    nearbyPlaces.forEach(place => bounds.extend([place.lat, place.lon]));
+    if (nearbyPlaces.length) indiaMap.fitBounds(bounds.pad(.18), {maxZoom:14});
+    else indiaMap.setView([nearbyOrigin.lat, nearbyOrigin.lon], 13);
+
+    status.textContent = nearbyPlaces.length
+      ? "Found " + nearbyPlaces.length + " mapped place(s) within " + (radius/1000) + " km of " + nearbyOrigin.display + ". Select one to draw a road route."
+      : "No matching facilities were found in the OpenStreetMap data within " + (radius/1000) + " km. Try a larger radius or another category. This does not prove that no facility exists.";
+
+    nearbyPlaces.forEach((place, index) => {
+      const card = document.createElement("div");
+      card.className = "message";
+      const title = document.createElement("strong");
+      title.textContent = (index + 1) + ". " + place.name;
+      const detail = document.createElement("p");
+      detail.className = "muted";
+      detail.textContent = place.kind;
+      const showButton = document.createElement("button");
+      showButton.className = "full secondary";
+      showButton.textContent = "Show this place on map";
+      showButton.addEventListener("click", () => showNearbyPlace(place));
+      const routeButton = document.createElement("button");
+      routeButton.className = "full";
+      routeButton.textContent = "Get road route to this place";
+      routeButton.addEventListener("click", () => routeToNearbyPlace(place));
+      card.append(title, detail, showButton, routeButton);
+      resultsBox.appendChild(card);
+    });
+  } catch (error) {
+    status.textContent = "Nearby search failed: " + error.message +
+      " Check internet access or try again later.";
+    console.error("Nearby facility search error:", error);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Find Nearby Places";
+  }
+}
+
+function showNearbyPlace(place) {
+  nearbyPlaceLayer.clearLayers();
+  const marker = L.marker([place.lat, place.lon]).addTo(nearbyPlaceLayer);
+  marker.bindPopup("<b>" + escapeHtml(place.name) + "</b><br>" + escapeHtml(place.kind)).openPopup();
+  indiaMap.setView([place.lat, place.lon], 17, {animate:true});
+  document.getElementById("nearbyStatus").textContent = "Showing selected facility: " + place.name + ". Tap Get road route to calculate directions.";
+}
+
+async function routeToNearbyPlace(place) {
+  const box = document.getElementById("nearbyStatus");
+  if (!nearbyOrigin) { box.textContent = "Search for a starting place first."; return; }
+  box.textContent = "Calculating road route to " + place.name + "...";
+  try {
+    const url = "https://router.project-osrm.org/route/v1/driving/" +
+      nearbyOrigin.lon + "," + nearbyOrigin.lat + ";" +
+      place.lon + "," + place.lat +
+      "?overview=full&geometries=geojson&alternatives=true&steps=false";
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Routing service returned HTTP " + response.status);
+    const data = await response.json();
+    if (data.code !== "Ok" || !data.routes?.length) throw new Error("No driving route was returned.");
+
+    if (routeLayer) indiaMap.removeLayer(routeLayer);
+    routeLayer = L.layerGroup().addTo(indiaMap);
+    endpointLayer.clearLayers();
+
+    data.routes.slice(1).forEach(route => {
+      L.geoJSON(route.geometry, {style:{color:"#64748b",weight:4,opacity:.7,dashArray:"7 7"}}).addTo(routeLayer);
+    });
+    const main = L.geoJSON(data.routes[0].geometry, {
+      style:{color:"#1269e8",weight:6,opacity:.96}
+    }).addTo(routeLayer);
+    L.marker([nearbyOrigin.lat,nearbyOrigin.lon]).bindPopup("<b>START</b><br>"+escapeHtml(nearbyOrigin.display)).addTo(endpointLayer);
+    L.marker([place.lat,place.lon]).bindPopup("<b>"+escapeHtml(place.name)+"</b><br>"+escapeHtml(place.kind)).addTo(endpointLayer);
+    indiaMap.fitBounds(main.getBounds(),{padding:[35,35],maxZoom:15});
+    const km=(data.routes[0].distance/1000).toFixed(1);
+    const mins=Math.round(data.routes[0].duration/60);
+    box.textContent="Road route found to "+place.name+". Distance: "+km+" km. Estimated driving time: "+mins+" minutes. Alternative routes returned: "+(data.routes.length-1)+".";
+    document.getElementById("routeStatus").textContent="Route found";
+  } catch(error) {
+    box.textContent="Could not calculate route: "+error.message;
+  }
+}
+document.getElementById("findNearbyBtn").addEventListener("click", findNearbyEmergencyPlaces);
+
+
+// ---------- DISASTER DEMONSTRATION MARKERS ----------
+document.getElementById("addHazardBtn").addEventListener("click",async () => {
+  const type = document.getElementById("hazardType").value;
+  const place = document.getElementById("hazardPlace").value.trim();
+  const box = document.getElementById("hazardResult");
+  if(!place){box.textContent="Enter an Indian location first.";return;}
+  box.textContent="Finding "+place+"...";
+  try{
+    const found=await geocodeIndia(place);
+    L.circleMarker([found.lat,found.lon],{radius:11,color:"#991b1b",weight:2,fillColor:"#ef4444",fillOpacity:.8})
+      .bindPopup("<b>SIMULATED "+escapeHtml(type)+"</b><br>"+escapeHtml(found.display)+"<br>Example marker only — not a live alert.")
+      .addTo(hazardLayer);
+    indiaMap.setView([found.lat,found.lon],9);
+    box.textContent="Added a simulated "+type+" marker at "+found.display+". This is not a real disaster report.";
+  }catch(error){box.textContent=error.message;}
+});
+document.getElementById("clearHazardsBtn").addEventListener("click",()=>{
+  hazardLayer.clearLayers();document.getElementById("hazardResult").textContent="Demo hazard markers cleared.";
+});
+
+// ---------- NETWORK CONNECTIVITY SIMULATION ----------
+// Four primary links plus backup links. This is a graph model, not real telecom.
+const networkEdges = [
+  {a:"Hospital",b:"Control Centre",active:true,primary:true},
+  {a:"Control Centre",b:"Rescue Team",active:true,primary:true},
+  {a:"Rescue Team",b:"Affected Village",active:true,primary:true},
+  {a:"Affected Village",b:"Relief Shelter",active:true,primary:true},
+  {a:"Hospital",b:"Rescue Team",active:true,primary:false},
+  {a:"Control Centre",b:"Relief Shelter",active:true,primary:false}
+];
+const networkNodesList=["Hospital","Control Centre","Rescue Team","Affected Village","Relief Shelter"];
+function findNetworkPath(source,target){
+  const queue=[[source]], seen=new Set([source]);
+  while(queue.length){const path=queue.shift(), node=path[path.length-1]; if(node===target)return path;
+    networkEdges.filter(e=>e.active&&(e.a===node||e.b===node)).forEach(e=>{const next=e.a===node?e.b:e.a;if(!seen.has(next)){seen.add(next);queue.push([...path,next]);}});
+  } return null;
+}
+function renderNetwork(){
+  const target=document.getElementById("networkNodes"); target.innerHTML="";
+  networkEdges.forEach((e,i)=>{const div=document.createElement("div");div.className="node";
+    div.innerHTML="<strong>"+e.a+" ↔ "+e.b+"</strong><small>"+(e.active?"🟢 Active":"🔴 FAILED")+" · "+(e.primary?"Main link":"Backup link")+"</small>";target.appendChild(div);});
+  const active=networkEdges.filter(e=>e.active).length;
+  document.getElementById("networkStatus").textContent=active+"/"+networkEdges.length+" links";
+}
+document.getElementById("failNetworkBtn").addEventListener("click",()=>{
+  const main=networkEdges.find(e=>e.primary&&e.active);
+  if(!main){document.getElementById("networkResult").textContent="All main links have already been failed. Restore the network to reset.";return;}
+  main.active=false; renderNetwork();
+  const path=findNetworkPath("Hospital","Relief Shelter");
+  document.getElementById("networkResult").textContent = `SIMULATED FAILURE: ${main.a} ↔ ${main.b} is down.\n${path ? "ALTERNATE COMMUNICATION PATH FOUND: " + path.join(" → ") + ". Messages can be rerouted in this model." : "NO ALTERNATE PATH. The endpoints are disconnected in this model."}\nThis is a graph simulation only; it does not affect real mobile networks.`;
+});
+document.getElementById("restoreNetworkBtn").addEventListener("click",()=>{
+  networkEdges.forEach(e=>e.active=true);renderNetwork();
+  document.getElementById("networkResult").textContent="All main and backup links restored. Hospital-to-shelter connectivity: "+findNetworkPath("Hospital","Relief Shelter").join(" → ");
+});
+renderNetwork();
+
+// ---------- EMERGENCY MESSAGE PRIORITY DEMO ----------
+const messages=[];
+const priorityOrder={Critical:1,High:2,Medium:3,Low:4};
+function renderMessages(){
+  const list=document.getElementById("messageList");list.innerHTML="";
+  messages.sort((a,b)=>priorityOrder[a.priority]-priorityOrder[b.priority]);
+  document.getElementById("messageCount").textContent=messages.length;
+  if(!messages.length){list.innerHTML='<p class="muted">No messages processed yet.</p>';return;}
+  messages.forEach(m=>{
+    const div=document.createElement("div");div.className="message";
+    div.textContent="["+m.priority+"] "+m.from+" → "+m.to+"\n"+m.text+"\nStatus: "+m.status;
+    list.appendChild(div);
+  });
+}
+document.getElementById("sendMessageBtn").addEventListener("click",()=>{
+  const from=document.getElementById("messageSource").value;
+  const to=document.getElementById("messageDestination").value;
+  const priority=document.getElementById("messagePriority").value;
+  const text=document.getElementById("messageText").value.trim();
+  if(!text){alert("Please enter an emergency message.");return;}
+  if(from===to){alert("Choose a different recipient.");return;}
+  messages.push({from,to,priority,text,status:"Prioritized in local demo queue"});
+  document.getElementById("messageText").value="";
+  renderMessages();
+});
+
+// ---------- CLASSICAL VS QUANTUM-INSPIRED OBJECTIVE DEMO ----------
+document.getElementById("compareBtn").addEventListener("click",()=>{
+  // Same candidate paths and weighted objective are evaluated by both demos.
+  const urgency=Number(document.getElementById("experimentUrgency").value);
+  const candidates=[
+    {path:["Hospital","Control Centre","Rescue Team","Affected Village"],time:7,capacity:8,risk:2},
+    {path:["Hospital","Rescue Team","Affected Village"],time:5,capacity:5,risk:3},
+    {path:["Hospital","Control Centre","Relief Shelter","Affected Village"],time:8,capacity:10,risk:1},
+    {path:["Hospital","Control Centre","Rescue Team","Affected Village","Relief Shelter"],time:10,capacity:12,risk:2}
+  ];
+  // Objective: lower is better. Critical messages penalize time and risk more heavily.
+  const cost=p=>p.time*(urgency===1?2:urgency===2?1.5:1)+p.risk*(urgency===1?3:2)+Math.max(0,10-p.capacity)*1.2;
+  const classical=[...candidates].sort((a,b)=>cost(a)-cost(b))[0];
+  // A seeded candidate re-ranking represents an approximate variational search over
+  // the same finite candidate set; no quantum circuit is executed in this HTML.
+  const quantumInspired=[...candidates].map((p,i)=>({p,score:cost(p)+[0.15,0.05,0.2,0.1][i]})).sort((a,b)=>a.score-b.score)[0].p;
+  const c=cost(classical), q=cost(quantumInspired), delta=((c-q)/c*100);
+  document.getElementById("quantumResult").textContent =
+    `SAME EMERGENCY SCENARIO · ${urgency===1?"CRITICAL":urgency===2?"HIGH":"NORMAL"} PRIORITY\n\n` +
+    `Classical baseline route: ${classical.path.join(" → ")}\nObjective cost: ${c.toFixed(2)}\n\n` +
+    `Quantum-inspired search (classical simulation): ${quantumInspired.path.join(" → ")}\nObjective cost: ${q.toFixed(2)}\n\n` +
+    (Math.abs(c-q)<0.001 ? "Both methods selected the same-cost solution." : (q<c ? "Illustrative search score is "+delta.toFixed(1)+"% lower." : "Classical baseline has a "+Math.abs(delta).toFixed(1)+"% lower score.")) +
+    `\n\nHow to explain: both methods solve the same toy routing objective. Classical = direct baseline search. QAOA is a hybrid quantum-classical algorithm that encodes choices and constraints into a cost function, then uses a parameterized quantum circuit and classical optimizer. This browser panel only illustrates the objective/search comparison; it does NOT execute QAOA or prove quantum advantage. Use Qiskit in the backend for a genuine QAOA experiment.`;
+});
+</script>
+</body>
+</html>
